@@ -1,14 +1,4 @@
 venv/
-*.pt
-*.pth
-*.pkl
-*.pt.tar
-*.pt.tar.gz
-*.pt.tar.bz2
-*.pt.tar.xz
-*.pt.tar.lzma
-*.pt.tar.lz
-*.pt.tar.zst
 
 pycache
 __pycache__
