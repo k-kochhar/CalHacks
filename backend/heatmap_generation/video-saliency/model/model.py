@@ -39,22 +39,19 @@ Output:
     }
 """
 
-import sys
 import os
 import tempfile
 import base64
 import requests
 from pathlib import Path
 
-# Add parent directory to path to import model modules
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 import torch
 import cv2
 import numpy as np
 from scipy import ndimage
 
-# Import the video saliency model
+# Import the video saliency model from packages directory
+# Truss automatically adds packages/ to Python path
 from model.Vinet_S_model import VideoSaliencyModel
 
 
