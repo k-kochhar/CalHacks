@@ -74,6 +74,19 @@ export default function UploadPage() {
         throw new Error('Failed to finalize upload');
       }
       
+      setUploadProgress(80);
+      
+      // Step 4: Start processing (call saliency model)
+      const processRes = await fetch(`/api/videos/${id}/process`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origUrl: origUrl }),
+      });
+      
+      if (!processRes.ok) {
+        throw new Error('Failed to start processing');
+      }
+      
       setUploadProgress(100);
       setIsUploading(false);
       setUploadComplete(true);
