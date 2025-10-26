@@ -104,13 +104,18 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface to-bg">
+    <div className="min-h-screen" style={{
+      background: `linear-gradient(135deg, var(--surface) 0%, var(--background) 100%)`
+    }}>
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-surface/80 backdrop-blur-xl border-b border-border z-50">
+      <nav className="fixed top-0 w-full backdrop-blur-xl border-b z-50" style={{
+        backgroundColor: "var(--surface)",
+        borderColor: "var(--border)"
+      }}>
         <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold text-secondary">Salient Labs</Link>
-            <Link href="/" className="text-secondary hover:opacity-70 transition-opacity font-medium">
+            <Link href="/" className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Salient Labs</Link>
+            <Link href="/" className="font-medium transition-opacity hover:opacity-70" style={{ color: "var(--text-secondary)" }}>
               ← Back to Home
             </Link>
           </div>
@@ -122,16 +127,20 @@ export default function UploadPage() {
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-secondary mb-6">
+            <h1 className="text-5xl font-bold mb-6" style={{ color: "var(--text-primary)" }}>
               Upload your video to see Salient Labs in action
             </h1>
-            <p className="text-xl text-secondary font-light">
+            <p className="text-xl font-light" style={{ color: "var(--text-secondary)" }}>
               Experience AI-driven video optimization in real-time
             </p>
           </div>
 
           {/* Upload Card */}
-          <div className="bg-surface border border-border rounded-lg p-12 mb-12 shadow-lg">
+          <div className="rounded-lg p-12 mb-12 shadow-lg" style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border)",
+            border: "1px solid"
+          }}>
             {!uploadComplete ? (
               <>
                 {/* Upload Area */}
@@ -192,20 +201,6 @@ export default function UploadPage() {
                   Upload Complete!
                 </h3>
                 
-                {/* Uploaded Video Preview */}
-                {window.uploadedVideoUrl && (
-                  <div className="mb-12">
-                    <h4 className="text-2xl font-semibold text-secondary mb-6 text-center">Your Uploaded Video</h4>
-                    <div className="w-full max-w-4xl mx-auto">
-                      <video 
-                        className="w-full rounded-lg shadow-lg" 
-                        controls 
-                        src={window.uploadedVideoUrl}
-                        style={{ maxHeight: '400px' }}
-                      />
-                    </div>
-                  </div>
-                )}
 
                 {/* Side-by-side thumbnails */}
                 <div className="grid md:grid-cols-2 gap-12 mb-12">
@@ -235,6 +230,12 @@ export default function UploadPage() {
                     className="px-10 py-4 bg-accent text-bg rounded-lg font-semibold hover:bg-accent-hover transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 shadow-accent/25"
                   >
                     See Full Demo
+                  </Link>
+                  <Link 
+                    href="/test-foveated"
+                    className="px-10 py-4 bg-accent text-bg rounded-lg font-semibold hover:bg-accent-hover transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 shadow-accent/25"
+                  >
+                    Test Reconstruction
                   </Link>
                   <button
                     onClick={() => {

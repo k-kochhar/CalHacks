@@ -15,7 +15,7 @@ export const metadata = {
   title: "Salient Labs",
   description: "Focus on What Matters",
   icons: {
-    icon: "/favicon.svg",
+    icon: "/logo.svg",
   },
 };
 

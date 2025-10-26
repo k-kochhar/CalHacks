@@ -41,7 +41,7 @@ export async function POST(req, { params }) {
       );
     }
 
-    if (!process.env.SALIENCY_API_KEY) {
+    if (!process.env.BASETEN_API_KEY) {
       return NextResponse.json(
         { error: 'Saliency API key not configured' },
         { status: 500 }
@@ -50,11 +50,11 @@ export async function POST(req, { params }) {
 
     // Call saliency model API
     const saliencyResponse = await fetch(
-      "https://model-03y4xg43.api.baseten.co/development/predict",
+      process.env.BASETEN_API_URL,
       {
         method: "POST",
         headers: {
-          "Authorization": `Api-Key ${process.env.SALIENCY_API_KEY}`,
+          "Authorization": `Api-Key ${process.env.BASETEN_API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({

@@ -77,8 +77,6 @@
 
 body {
   background: linear-gradient(135deg, #0A1628 0%, #1a0b2e 100%);
-  background-size: 200% 200%;
-  animation: gradientShift 10s ease infinite;
   color: var(--text-primary);
   font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
@@ -117,6 +115,15 @@ body::before {
 /* Gradient utilities */
 .bg-gradient-radial {
   background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+/* 3D Transform utilities */
+.rotate-y-2 {
+  transform: rotateY(2deg);
+}
+
+.hover\:rotate-y-2:hover {
+  transform: rotateY(2deg);
 }
 
 * {
