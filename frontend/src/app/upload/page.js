@@ -8,6 +8,7 @@ export default function UploadPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('Preparing upload...');
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -34,9 +35,11 @@ export default function UploadPage() {
     
     setIsUploading(true);
     setUploadProgress(0);
+    setUploadStatus('Preparing upload...');
     
     try {
       // Step 1: Request presigned URL and create MongoDB record
+      setUploadStatus('Requesting upload URL...');
       setUploadProgress(10);
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -49,10 +52,11 @@ export default function UploadPage() {
       }
       
       const { uploadUrl, origUrl, id } = await res.json();
-      setUploadProgress(30);
+      setUploadProgress(25);
       
       // Step 2: Upload to S3
-      setUploadProgress(50);
+      setUploadStatus('Uploading video to cloud...');
+      setUploadProgress(40);
       const put = await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type || "video/mp4" },
@@ -63,9 +67,10 @@ export default function UploadPage() {
         throw new Error('Upload failed');
       }
       
-      setUploadProgress(70);
+      setUploadProgress(65);
       
       // Step 3: Finalize upload (set status to processing)
+      setUploadStatus('Finalizing upload...');
       const finalizeRes = await fetch(`/api/videos/${id}/finalize`, {
         method: "POST",
       });
@@ -74,19 +79,34 @@ export default function UploadPage() {
         throw new Error('Failed to finalize upload');
       }
       
-      setUploadProgress(80);
+      setUploadProgress(75);
       
-      // Step 4: Start processing (call saliency model)
+      // Step 4: Start processing (call saliency model) - with simulated progress
+      setUploadStatus('Analyzing video with AI model...');
+      
+      // Simulate gradual progress during ML processing
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev < 95) {
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 300); // Increment every 300ms
+      
       const processRes = await fetch(`/api/videos/${id}/process`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ origUrl: origUrl }),
       });
       
+      clearInterval(progressInterval);
+      
       if (!processRes.ok) {
         throw new Error('Failed to start processing');
       }
       
+      setUploadStatus('Complete!');
       setUploadProgress(100);
       setIsUploading(false);
       setUploadComplete(true);
@@ -99,6 +119,7 @@ export default function UploadPage() {
       console.error('Upload error:', error);
       setIsUploading(false);
       setUploadProgress(0);
+      setUploadStatus('Upload failed');
       alert('Upload failed. Please try again.');
     }
   };
@@ -181,7 +202,7 @@ export default function UploadPage() {
                 {isUploading && (
                   <div className="mt-12">
                     <div className="flex justify-between text-lg text-secondary mb-4">
-                      <span>Uploading...</span>
+                      <span className="font-medium">{uploadStatus}</span>
                       <span>{uploadProgress}%</span>
                     </div>
                     <div className="w-full bg-surface-elevated rounded-lg h-3">
@@ -190,6 +211,11 @@ export default function UploadPage() {
                         style={{ width: `${uploadProgress}%` }}
                       ></div>
                     </div>
+                    {uploadProgress >= 75 && uploadProgress < 100 && (
+                      <p className="text-sm text-text-muted mt-3 text-center">
+                        This may take a moment while our AI model analyzes your video...
+                      </p>
+                    )}
                   </div>
                 )}
               </>
@@ -241,6 +267,7 @@ export default function UploadPage() {
                     onClick={() => {
                       setUploadComplete(false);
                       setUploadProgress(0);
+                      setUploadStatus('Preparing upload...');
                     }}
                     className="px-10 py-4 border border-border-light text-secondary rounded-lg font-semibold hover:bg-surface transition-all duration-200"
                   >

@@ -1,13 +1,23 @@
 'use client';
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
   const [isOriginalPlaying, setIsOriginalPlaying] = useState(false);
   const [isOptimizedPlaying, setIsOptimizedPlaying] = useState(false);
   const [isHeroPlaying, setIsHeroPlaying] = useState(false);
+  
+  // Refs for video elements
+  const heroVideoRef = useRef(null);
+  const originalVideoRef = useRef(null);
+  const optimizedVideoRef = useRef(null);
+  
+  // Track which videos have been autoplayed
+  const [hasAutoplayedHero, setHasAutoplayedHero] = useState(false);
+  const [hasAutoplayedOriginal, setHasAutoplayedOriginal] = useState(false);
+  const [hasAutoplayedOptimized, setHasAutoplayedOptimized] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,6 +26,60 @@ export default function Home() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Intersection Observer for autoplay on scroll
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.3, // Trigger when 30% of video is visible
+      rootMargin: '0px 0px -100px 0px' // Start animation slightly before video is fully visible
+    };
+
+    const handleIntersection = (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const videoId = entry.target.id;
+          
+          // Add animation class to container
+          const container = entry.target.closest('.video-container');
+          if (container) {
+            container.classList.add('animate-in');
+          }
+          
+          if (videoId === 'hero-video' && !hasAutoplayedHero) {
+            // Small delay for smooth animation
+            setTimeout(() => {
+              entry.target.play().catch(err => console.log('Autoplay prevented:', err));
+              setIsHeroPlaying(true);
+              setHasAutoplayedHero(true);
+            }, 300);
+          } else if (videoId === 'original-video' && !hasAutoplayedOriginal) {
+            setTimeout(() => {
+              entry.target.play().catch(err => console.log('Autoplay prevented:', err));
+              setIsOriginalPlaying(true);
+              setHasAutoplayedOriginal(true);
+            }, 300);
+          } else if (videoId === 'optimized-video' && !hasAutoplayedOptimized) {
+            setTimeout(() => {
+              entry.target.play().catch(err => console.log('Autoplay prevented:', err));
+              setIsOptimizedPlaying(true);
+              setHasAutoplayedOptimized(true);
+            }, 300);
+          }
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(handleIntersection, observerOptions);
+
+    // Observe all video elements
+    if (heroVideoRef.current) observer.observe(heroVideoRef.current);
+    if (originalVideoRef.current) observer.observe(originalVideoRef.current);
+    if (optimizedVideoRef.current) observer.observe(optimizedVideoRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasAutoplayedHero, hasAutoplayedOriginal, hasAutoplayedOptimized]);
 
   const handleHeroVideoClick = () => {
     const video = document.getElementById('hero-video');
@@ -132,17 +196,18 @@ export default function Home() {
           </div>
 
           <div className="max-w-5xl mx-auto">
-            <div className="w-full h-[400px] border rounded-3xl overflow-hidden relative group cursor-pointer" style={{
+            <div className="w-full h-[400px] border rounded-3xl overflow-hidden relative group cursor-pointer video-container" style={{
               backgroundColor: "var(--surface)",
               borderColor: "var(--border)"
             }} onClick={handleHeroVideoClick}>
               <video 
+                ref={heroVideoRef}
                 id="hero-video"
                 src="/f1.mp4"
                 loop
                 muted
                 playsInline
-                className="w-full h-full object-contain bg-black"
+                className="w-full h-full object-contain bg-black video-animate"
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-300 opacity-0 group-hover:opacity-100 pointer-events-none">
                 <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/40">
@@ -231,15 +296,16 @@ export default function Home() {
 
           <div className="grid md:grid-cols-2 gap-16">
             {/* Original */}
-            <div>
+            <div className="video-container">
               <div className="w-full h-[400px] border-2 border-white/10 rounded-3xl mb-8 overflow-hidden bg-black/30 relative group cursor-pointer" onClick={handleOriginalVideoClick}>
                 <video 
+                  ref={originalVideoRef}
                   id="original-video"
                   src="/pourover.mp4"
                   loop
                   muted
                   playsInline
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover video-animate"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-300 opacity-0 group-hover:opacity-100 pointer-events-none">
                   <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/40">
@@ -262,15 +328,16 @@ export default function Home() {
             </div>
 
             {/* Optimized */}
-            <div>
+            <div className="video-container">
               <div className="w-full h-[400px] border-2 border-[#4F7FFF]/50 rounded-3xl mb-8 overflow-hidden bg-black/30 relative group cursor-pointer shadow-[0_0_30px_rgba(79,127,255,0.2)]" onClick={handleOptimizedVideoClick}>
                 <video 
+                  ref={optimizedVideoRef}
                   id="optimized-video"
                   src="/pourover.mp4"
                   loop
                   muted
                   playsInline
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover video-animate"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-300 opacity-0 group-hover:opacity-100 pointer-events-none">
                   <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/40">

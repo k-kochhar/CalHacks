@@ -151,3 +151,42 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* Video scroll animations */
+@keyframes videoFadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes videoGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(79, 127, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(79, 127, 255, 0.6);
+  }
+}
+
+.video-container {
+  opacity: 0;
+  animation: videoFadeInScale 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-play-state: paused;
+}
+
+.video-container.animate-in {
+  animation-play-state: running;
+}
+
+.video-animate {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.video-animate:hover {
+  transform: scale(1.02);
+}
