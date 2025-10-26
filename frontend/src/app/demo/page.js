@@ -5,6 +5,31 @@ import Link from 'next/link';
 
 export default function DemoPage() {
   const [isOriginal, setIsOriginal] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const handleVideoClick = () => {
+    const videoId = isOriginal ? 'demo-original-video' : 'demo-optimized-video';
+    const video = document.getElementById(videoId);
+    if (video) {
+      if (video.paused) {
+        video.play();
+        setIsPlaying(true);
+      } else {
+        video.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const handleToggle = (original) => {
+    setIsOriginal(original);
+    setIsPlaying(false);
+    // Pause both videos when switching
+    const originalVideo = document.getElementById('demo-original-video');
+    const optimizedVideo = document.getElementById('demo-optimized-video');
+    if (originalVideo) originalVideo.pause();
+    if (optimizedVideo) optimizedVideo.pause();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface to-bg">
@@ -37,7 +62,7 @@ export default function DemoPage() {
           <div className="flex justify-center mb-12">
             <div className="bg-surface border border-border rounded-lg p-1">
               <button
-                onClick={() => setIsOriginal(true)}
+                onClick={() => handleToggle(true)}
                 className={`px-8 py-4 rounded-lg font-semibold transition-all duration-200 ${
                   isOriginal 
                     ? 'bg-accent text-bg shadow-lg shadow-accent/25' 
@@ -47,7 +72,7 @@ export default function DemoPage() {
                 Original
               </button>
               <button
-                onClick={() => setIsOriginal(false)}
+                onClick={() => handleToggle(false)}
                 className={`px-8 py-4 rounded-lg font-semibold transition-all duration-200 ${
                   !isOriginal 
                     ? 'bg-accent text-bg shadow-lg shadow-accent/25' 
@@ -61,19 +86,63 @@ export default function DemoPage() {
 
           {/* Video Player Area */}
           <div className="bg-surface border border-border rounded-lg overflow-hidden mb-12 shadow-lg">
-            <div className="aspect-video bg-gradient-to-br from-surface-elevated to-surface flex items-center justify-center">
+            <div className="aspect-video bg-black relative group cursor-pointer" onClick={handleVideoClick}>
               {isOriginal ? (
-                <div className="text-center">
-                  <div className="text-8xl mb-6">🎬</div>
-                  <div className="text-3xl font-semibold text-secondary mb-4">Original Video</div>
-                  <div className="text-secondary text-xl">1080p • 2.4 MB • Full quality</div>
-                </div>
+                <>
+                  <video 
+                    id="demo-original-video"
+                    src="/coffee-window.mp4"
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-300 opacity-0 group-hover:opacity-100 pointer-events-none">
+                    <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/40">
+                      {isPlaying ? (
+                        <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-12 h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
+                    <div className="text-white font-semibold">Original Video</div>
+                    <div className="text-white/80 text-sm">1080p • 2.4 MB • Full quality</div>
+                  </div>
+                </>
               ) : (
-                <div className="text-center">
-                  <div className="text-8xl mb-6">⚡</div>
-                  <div className="text-3xl font-semibold text-accent mb-4">Optimized with Salient Labs</div>
-                  <div className="text-secondary text-xl">1080p • 1.2 MB • 50% smaller</div>
-                </div>
+                <>
+                  <video 
+                    id="demo-optimized-video"
+                    src="/coffee-window.mp4"
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-300 opacity-0 group-hover:opacity-100 pointer-events-none">
+                    <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/40">
+                      {isPlaying ? (
+                        <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-12 h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-accent/40">
+                    <div className="text-accent font-semibold">Optimized with Salient Labs</div>
+                    <div className="text-white/80 text-sm">1080p • 1.2 MB • 50% smaller</div>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -142,42 +211,6 @@ export default function DemoPage() {
 
             {/* Right Sidebar */}
             <div className="space-y-8">
-              {/* Related Clips */}
-              <div className="bg-surface border border-border rounded-lg p-8 shadow-lg">
-                <h4 className="text-xl font-semibold text-secondary mb-6">Related Examples</h4>
-                <div className="space-y-6">
-                  <div className="flex space-x-4">
-                    <div className="w-20 h-16 bg-gradient-to-br from-surface-elevated to-surface border border-border rounded-lg flex items-center justify-center">
-                      <span className="text-2xl">📹</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-lg font-medium text-secondary">Sports Highlights</div>
-                      <div className="text-secondary">60% compression</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex space-x-4">
-                    <div className="w-20 h-16 bg-gradient-to-br from-surface-elevated to-surface border border-border rounded-lg flex items-center justify-center">
-                      <span className="text-2xl">🎥</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-lg font-medium text-secondary">Conference Talk</div>
-                      <div className="text-secondary">45% compression</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex space-x-4">
-                    <div className="w-20 h-16 bg-gradient-to-br from-surface-elevated to-surface border border-border rounded-lg flex items-center justify-center">
-                      <span className="text-2xl">🎬</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-lg font-medium text-secondary">Product Demo</div>
-                      <div className="text-secondary">55% compression</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Tech Stack */}
               <div className="bg-surface border border-border rounded-lg p-8 shadow-lg">
                 <h4 className="text-xl font-semibold text-secondary mb-6">Powered by</h4>

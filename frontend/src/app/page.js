@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
+  const [isOriginalPlaying, setIsOriginalPlaying] = useState(false);
+  const [isOptimizedPlaying, setIsOptimizedPlaying] = useState(false);
+  const [isHeroPlaying, setIsHeroPlaying] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -13,6 +16,39 @@ export default function Home() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleHeroVideoClick = () => {
+    const video = document.getElementById('hero-video');
+    if (video.paused) {
+      video.play();
+      setIsHeroPlaying(true);
+    } else {
+      video.pause();
+      setIsHeroPlaying(false);
+    }
+  };
+
+  const handleOriginalVideoClick = () => {
+    const video = document.getElementById('original-video');
+    if (video.paused) {
+      video.play();
+      setIsOriginalPlaying(true);
+    } else {
+      video.pause();
+      setIsOriginalPlaying(false);
+    }
+  };
+
+  const handleOptimizedVideoClick = () => {
+    const video = document.getElementById('optimized-video');
+    if (video.paused) {
+      video.play();
+      setIsOptimizedPlaying(true);
+    } else {
+      video.pause();
+      setIsOptimizedPlaying(false);
+    }
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -36,8 +72,8 @@ export default function Home() {
             <Link href="/upload" className="font-medium text-base hover:opacity-70 transition-all duration-300 hover:scale-105" style={{ color: "var(--text-primary)" }}>
               Upload Video
             </Link>
-            <Link href="/about" className="font-medium text-base hover:opacity-70 transition-all duration-300 hover:scale-105" style={{ color: "var(--text-primary)" }}>
-              About
+            <Link href="/team" className="font-medium text-base hover:opacity-70 transition-all duration-300 hover:scale-105" style={{ color: "var(--text-primary)" }}>
+              Team
             </Link>
           </div>
         </div>
@@ -96,13 +132,30 @@ export default function Home() {
           </div>
 
           <div className="max-w-5xl mx-auto">
-            <div className="w-full h-[400px] border rounded-3xl flex items-center justify-center" style={{
+            <div className="w-full h-[400px] border rounded-3xl overflow-hidden relative group cursor-pointer" style={{
               backgroundColor: "var(--surface)",
               borderColor: "var(--border)"
-            }}>
-              <div className="text-center">
-                <div className="text-6xl mb-4">🎥</div>
-                <div className="text-2xl font-medium" style={{ color: "var(--text-secondary)" }}>Interactive video demo</div>
+            }} onClick={handleHeroVideoClick}>
+              <video 
+                id="hero-video"
+                src="/f1.mp4"
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-contain bg-black"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-300 opacity-0 group-hover:opacity-100 pointer-events-none">
+                <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/40">
+                  {isHeroPlaying ? (
+                    <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-12 h-12 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -179,10 +232,27 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-16">
             {/* Original */}
             <div>
-              <div className="w-full h-[400px] border-2 border-white/10 rounded-3xl mb-8 flex items-center justify-center bg-white/5">
-                <div className="text-center">
-                  <div className="text-6xl mb-4">📹</div>
-                  <div className="font-medium text-2xl text-white/50">Original Video</div>
+              <div className="w-full h-[400px] border-2 border-white/10 rounded-3xl mb-8 overflow-hidden bg-black/30 relative group cursor-pointer" onClick={handleOriginalVideoClick}>
+                <video 
+                  id="original-video"
+                  src="/pourover.mp4"
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-300 opacity-0 group-hover:opacity-100 pointer-events-none">
+                  <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/40">
+                    {isOriginalPlaying ? (
+                      <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    )}
+                  </div>
                 </div>
               </div>
               <h3 className="text-2xl font-bold mb-3 text-white">Original</h3>
@@ -193,10 +263,27 @@ export default function Home() {
 
             {/* Optimized */}
             <div>
-              <div className="w-full h-[400px] border-2 border-[#4F7FFF]/50 rounded-3xl mb-8 flex items-center justify-center bg-white/5">
-                <div className="text-center">
-                  <div className="text-6xl mb-4">⚡</div>
-                  <div className="font-medium text-2xl bg-gradient-to-r from-[#4F7FFF] to-[#667eea] bg-clip-text text-transparent">Optimized with Salient Labs</div>
+              <div className="w-full h-[400px] border-2 border-[#4F7FFF]/50 rounded-3xl mb-8 overflow-hidden bg-black/30 relative group cursor-pointer shadow-[0_0_30px_rgba(79,127,255,0.2)]" onClick={handleOptimizedVideoClick}>
+                <video 
+                  id="optimized-video"
+                  src="/pourover.mp4"
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-300 opacity-0 group-hover:opacity-100 pointer-events-none">
+                  <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/40">
+                    {isOptimizedPlaying ? (
+                      <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    )}
+                  </div>
                 </div>
               </div>
               <h3 className="text-2xl font-bold mb-3 text-white">Optimized</h3>
@@ -248,13 +335,10 @@ export default function Home() {
             </Link>
           </div>
           <div className="flex flex-wrap justify-center gap-12 text-lg">
-            <Link href="/about" className="text-white/70 hover:text-white transition-colors duration-300">
-              About
-            </Link>
-            <Link href="#team" className="text-white/70 hover:text-white transition-colors duration-300">
+            <Link href="/team" className="text-white/70 hover:text-white transition-colors duration-300">
               Team
             </Link>
-            <Link href="https://github.com" className="text-white/70 hover:text-white transition-colors duration-300">
+            <Link href="https://github.com/k-kochhar/CalHacks" className="text-white/70 hover:text-white transition-colors duration-300">
               GitHub
             </Link>
           </div>
