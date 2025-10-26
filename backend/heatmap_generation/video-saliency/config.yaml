@@ -4,3 +4,17 @@ requirements_file: ./requirements.txt
 resources:
   accelerator: H100_40GB
   use_gpu: true
+environment_variables:
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+  AWS_REGION: ${AWS_REGION}
+system_packages:
+  - libgl1-mesa-glx
+  - libglib2.0-0
+  - libsm6
+  - libxext6
+  - libxrender1
+  - libegl1-mesa
+  - libgles2-mesa
+  - libgbm1
+
