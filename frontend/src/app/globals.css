@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800,900&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=geist-sans@300,400,500,600,700,800,900&display=swap');
 
 :root {
   /* Background colors - modern gradient dark navy to purple */
@@ -45,7 +45,7 @@
   --color-border: rgba(255, 255, 255, 0.1);
   --color-border-light: rgba(255, 255, 255, 0.2);
 
-  --font-sans: 'Satoshi', system-ui, -apple-system, sans-serif;
+  --font-sans: 'geist-sans', system-ui, -apple-system, sans-serif;
 }
 
 /* Keyframe Animations */

@@ -17,7 +17,7 @@ export default function Home() {
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated Background Gradient */}
-      <div className="fixed inset-0 bg-gradient-to-br from-[#0A1628] via-[#1a0b2e] to-[#0A1628] opacity-90 animate-pulse" />
+      <div className="fixed inset-0 bg-gradient-to-br from-[#0A1628] via-[#1a0b2e] to-[#0A1628] opacity-90" />
       
       {/* Floating Geometric Shapes */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -58,10 +58,10 @@ export default function Home() {
             <span 
               className="bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(102,126,234,0.5)]"
             >
-              Focus
-            </span>{" "}on
+              Sharper
+            </span>{" "}where
             <br />
-            <span className="text-white">What Matters.</span>
+            <span className="text-white">it Matters.</span>
           </h1>
 
           {/* Subheadline - Staggered Animation */}
