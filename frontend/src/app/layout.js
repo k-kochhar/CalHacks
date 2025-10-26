@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Salient",
-  description: "Stream smarter",
+  title: "Salient Labs",
+  description: "Focus on What Matters",
   icons: {
     icon: "/favicon.svg",
   },
