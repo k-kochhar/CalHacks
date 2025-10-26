@@ -1,0 +1,6 @@
+model_name: video-saliency
+python_version: py312
+requirements_file: ./requirements.txt
+resources:
+  accelerator: H100_40GB
+  use_gpu: true
