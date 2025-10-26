@@ -3,13 +3,16 @@
 
 import requests
 import os
+import dotenv
+
+dotenv.load_dotenv()
+
+aws_video_url = "https://salient-labs-videos.s3.amazonaws.com/original/5427efeb-1d76-403e-8189-b6469531c879.mp4"
 
 response = requests.post(
     os.environ.get("BASETEN_API_URL"),
     headers={"Authorization": f"Api-Key {os.environ.get('BASETEN_API_KEY')}"},
-    json={
-        "video_url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4"
-    },
+    json={"video_url": aws_video_url},
     timeout=300,
 )
 
