@@ -8,7 +8,7 @@ import os
 # API_KEY = os.environ.get("BASETEN_API_KEY", "YOUR_API_KEY_HERE")
 
 response = requests.post(
-    "https://model-vq0n8y1w.api.baseten.co/development/predict",
+    "https://model-03y4xg43.api.baseten.co/development/predict",
     headers={"Authorization": f"Api-Key bSRhB0R4.5zVXIvEyniLB6Jzwrpxs0NETFvrXeRk8"},
     json={
         "video_url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4"
