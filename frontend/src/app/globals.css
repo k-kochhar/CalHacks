@@ -2,19 +2,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --background: #0a0a0a;
-  --surface: #111111;
-  --surface-elevated: #1a1a1a;
-  --text-primary: #ffffff;
-  --text-secondary: #a3a3a3;
-  --text-muted: #737373;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-light: #1e40af;
-  --border: #262626;
-  --border-light: #404040;
-  --shadow: rgba(0, 0, 0, 0.3);
-  --shadow-lg: rgba(0, 0, 0, 0.5);
+  --background: #002E2E;
+  --surface: #004E4E;
+  --surface-elevated: #006666;
+  --text-primary: #F5F5F5;
+  --text-secondary: #E8E8E8;
+  --text-muted: #B8B8B8;
+  --accent: #00FFFF;
+  --accent-hover: #00E6E6;
+  --accent-light: #33FFFF;
+  --border: #003333;
+  --border-light: #005555;
+  --shadow: rgba(0, 78, 78, 0.3);
+  --shadow-lg: rgba(0, 46, 46, 0.5);
+  --glow: rgba(0, 255, 255, 0.2);
 }
 
 @theme inline {
