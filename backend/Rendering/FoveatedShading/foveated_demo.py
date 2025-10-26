@@ -18,12 +18,12 @@ logging.basicConfig(
 
 def foveated_video_demo(
     input_path: str,
-    output_path: str = "output_foveated.mp4",
+    output_path: str = "C:\Users\devya\Code\CalHacks\backend\Rendering\Videos\Outputs\output_foveated.mp4",
     fovea_trajectory: str = "center",  # "center", "scan", or "random"
-    stride: int = 4,
-    thresh1: float = 0.1,
-    thresh2: float = 0.25,
-    thresh3: float = 0.4,
+    stride: int = FOVEATED_DEFAULTS["stride"],
+    thresh1: float = FOVEATED_DEFAULTS["thresh1"],
+    thresh2: float = FOVEATED_DEFAULTS["thresh2"],
+    thresh3: float = FOVEATED_DEFAULTS["thresh3"],
 ):
     """
     Apply foveated rendering to every frame and save as H.264-compressed MP4.

@@ -13,12 +13,13 @@ logging.basicConfig(
 )
 
 def reconstruction_video_demo(
-    input_path: str = "output_foveated.mp4",
-    output_path: str = "output_reconstructed.mp4",
-    stride: int = 4,
-    thresh1: float = 0.1,
-    thresh2: float = 0.25,
-    thresh3: float = 0.4,
+    input_path: str = "C:\Users\devya\Code\CalHacks\backend\Rendering\Videos\Outputs\output_foveated.mp4",
+    output_path: str = "C:\Users\devya\Code\CalHacks\backend\Rendering\Videos\Outputs\output_reconstructed.mp4",
+    fovea_trajectory: str = "center",  # "center", "scan", or "random"
+    stride: int = FOVEATED_DEFAULTS["stride"],
+    thresh1: float = FOVEATED_DEFAULTS["thresh1"],
+    thresh2: float = FOVEATED_DEFAULTS["thresh2"],
+    thresh3: float = FOVEATED_DEFAULTS["thresh3"],
 ):
     logging.info(f"Opening input: {input_path}")
     cap = cv2.VideoCapture(input_path)
