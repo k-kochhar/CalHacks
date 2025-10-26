@@ -1,5 +1,6 @@
 venv/
-
+.env
+.env.local
 pycache
 __pycache__
 *.pyc

@@ -199,7 +199,8 @@ class Model:
 
     def _process_video(self, video_path, download_time):
         """
-        Internal method to process video and extract focal points.
+        Internal method to process video and extract focal points using streaming.
+        Uses a sliding window buffer to avoid loading all frames into memory.
         Includes detailed timing metrics for performance benchmarking.
         """
         process_start = time.time()
@@ -221,19 +222,7 @@ class Model:
         print(
             f"🔄 Will resize from {input_resolution} to {model_resolution} for inference"
         )
-
-        # Read all frames
-        load_start = time.time()
-        frames = []
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frames.append(frame)
-        cap.release()
-        load_time = time.time() - load_start
-
-        print(f"⏱️  Frame loading: {load_time:.2f}s ({len(frames)} frames)")
+        print(f"💾 Using streaming mode - max {self.CLIP_SIZE} frames in memory")
 
         # Prepare output data structure
         focal_points_data = {
@@ -249,110 +238,79 @@ class Model:
             "performance_metrics": {
                 "device": str(self._device),
                 "download_decode_time_seconds": round(download_time, 2),
-                "frame_loading_time_seconds": round(load_time, 2),
             },
         }
 
-        # Process frames with detailed timing
+        # Process frames with streaming and detailed timing
         inference_start = time.time()
         preprocessing_times = []
         model_inference_times = []
         postprocessing_times = []
 
-        print(f"\n🚀 Starting inference on {len(frames)} frames...")
+        print(f"\n🚀 Starting streaming inference on {total_frames} frames...")
+
+        # Sliding window buffer (only holds CLIP_SIZE frames max)
+        clip_buffer = []
+        frame_idx = 0
+        first_frame = None
 
         with torch.no_grad():
-            for i in range(len(frames)):
-                frame_start = time.time()
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
 
-                # PREPROCESSING
-                preprocess_start = time.time()
+                # Store first frame for padding
+                if frame_idx == 0:
+                    first_frame = frame.copy()
 
-                # Get clip (32 frames ending at current frame)
-                start_idx = max(0, i - self.CLIP_SIZE + 1)
-                clip = frames[start_idx : i + 1]
+                # Update sliding window buffer
+                clip_buffer.append(frame)
+                if len(clip_buffer) > self.CLIP_SIZE:
+                    clip_buffer.pop(0)  # Remove oldest frame
 
-                # Pad if needed
-                if len(clip) < self.CLIP_SIZE:
-                    clip = [frames[0]] * (self.CLIP_SIZE - len(clip)) + clip
+                # Create current clip with padding if needed
+                current_clip = clip_buffer.copy()
+                if len(current_clip) < self.CLIP_SIZE:
+                    padding = [first_frame] * (self.CLIP_SIZE - len(current_clip))
+                    current_clip = padding + current_clip
 
-                # Preprocess clip
-                processed_clip = []
-                for frame in clip:
-                    # Resize to model input size (THIS IS THE KEY - resolution doesn't matter!)
-                    resized = cv2.resize(frame, (self.MODEL_WIDTH, self.MODEL_HEIGHT))
-                    # BGR to RGB
-                    rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
-                    # Normalize to [0, 1]
-                    normalized = rgb.astype(np.float32) / 255.0
-                    # Apply ImageNet normalization
-                    mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-                    std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-                    normalized = (normalized - mean) / std
-                    processed_clip.append(normalized)
-
-                # Convert to tensor: (C, T, H, W)
-                clip_np = np.stack(processed_clip, axis=0)  # (T, H, W, C)
-                clip_np = np.transpose(clip_np, (3, 0, 1, 2))  # (C, T, H, W)
-                clip_tensor = (
-                    torch.from_numpy(clip_np).unsqueeze(0).to(self._device)
-                )  # (1, C, T, H, W)
-
-                preprocessing_times.append(time.time() - preprocess_start)
-
-                # MODEL INFERENCE
-                inference_start_frame = time.time()
-                saliency = self._model(clip_tensor)  # (1, H, W)
-                saliency_np = saliency.cpu().numpy()[0]  # (H, W)
-                model_inference_times.append(time.time() - inference_start_frame)
-
-                # POST-PROCESSING
-                postprocess_start = time.time()
-
-                # Resize saliency to original frame size
-                saliency_resized = cv2.resize(saliency_np, (width, height))
-
-                # Apply Gaussian blur
-                saliency_resized = cv2.GaussianBlur(
-                    saliency_resized,
-                    (self.GAUSSIAN_KERNEL_SIZE, self.GAUSSIAN_KERNEL_SIZE),
-                    self.GAUSSIAN_SIGMA,
+                # Process this frame
+                focal_points, preprocess_time, inference_time, postprocess_time = (
+                    self._process_single_frame(current_clip, width, height)
                 )
 
-                # Normalize saliency to [0, 1] range
-                sal_min = saliency_resized.min()
-                sal_max = saliency_resized.max()
-                if sal_max > sal_min:
-                    saliency_normalized = (saliency_resized - sal_min) / (
-                        sal_max - sal_min
-                    )
-                else:
-                    saliency_normalized = saliency_resized
+                # Accumulate timing metrics
+                preprocessing_times.append(preprocess_time)
+                model_inference_times.append(inference_time)
+                postprocessing_times.append(postprocess_time)
 
-                # Extract focal points
-                focal_points = self._extract_focal_points(saliency_normalized)
-
+                # Accumulate lightweight focal point results
                 focal_points_data["focal_points"].append(
                     {
-                        "frame_index": i,
+                        "frame_index": frame_idx,
                         "points": [fp.to_dict() for fp in focal_points],
                     }
                 )
 
-                postprocessing_times.append(time.time() - postprocess_start)
+                frame_idx += 1
 
                 # Log progress
-                if (i + 1) % 10 == 0 or i == len(frames) - 1:
+                if frame_idx % 10 == 0 or frame_idx == total_frames:
                     elapsed = time.time() - inference_start
-                    fps = (i + 1) / elapsed
-                    print(f"⏱️  Processed {i + 1}/{len(frames)} frames | {fps:.2f} FPS")
+                    fps_processing = frame_idx / elapsed
+                    print(
+                        f"⏱️  Processed {frame_idx}/{total_frames} frames | {fps_processing:.2f} FPS"
+                    )
+
+        cap.release()
 
         # Calculate timing statistics
         total_inference_time = time.time() - inference_start
         avg_preprocess = np.mean(preprocessing_times) * 1000  # ms
         avg_inference = np.mean(model_inference_times) * 1000  # ms
         avg_postprocess = np.mean(postprocessing_times) * 1000  # ms
-        processing_fps = len(frames) / total_inference_time
+        processing_fps = frame_idx / total_inference_time
 
         # Add comprehensive metrics
         focal_points_data["performance_metrics"].update(
@@ -366,12 +324,13 @@ class Model:
                     avg_preprocess + avg_inference + avg_postprocess, 2
                 ),
                 "resolution_note": f"Input {input_resolution} resized to {model_resolution} - original resolution does NOT affect inference speed",
+                "memory_optimization": f"Streaming mode - max {self.CLIP_SIZE} frames in memory at once",
             }
         )
 
         print(f"\n📊 Performance Summary:")
         print(f"   Device: {self._device}")
-        print(f"   Frames: {len(frames)}")
+        print(f"   Frames: {frame_idx}")
         print(f"   Processing FPS: {processing_fps:.2f}")
         print(
             f"   Avg per frame: {avg_preprocess + avg_inference + avg_postprocess:.2f}ms"
@@ -381,6 +340,79 @@ class Model:
         print(f"     - Post-processing: {avg_postprocess:.2f}ms")
 
         return focal_points_data
+
+    def _process_single_frame(self, clip, width, height):
+        """
+        Process a single frame with its temporal context (clip).
+
+        Args:
+            clip: List of CLIP_SIZE frames (current frame and its temporal context)
+            width: Original video width for resizing saliency map
+            height: Original video height for resizing saliency map
+
+        Returns:
+            Tuple of (focal_points, preprocess_time, inference_time, postprocess_time)
+        """
+        # PREPROCESSING
+        preprocess_start = time.time()
+
+        # Preprocess clip
+        processed_clip = []
+        for frame in clip:
+            # Resize to model input size
+            resized = cv2.resize(frame, (self.MODEL_WIDTH, self.MODEL_HEIGHT))
+            # BGR to RGB
+            rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+            # Normalize to [0, 1]
+            normalized = rgb.astype(np.float32) / 255.0
+            # Apply ImageNet normalization
+            mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+            std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+            normalized = (normalized - mean) / std
+            processed_clip.append(normalized)
+
+        # Convert to tensor: (C, T, H, W)
+        clip_np = np.stack(processed_clip, axis=0)  # (T, H, W, C)
+        clip_np = np.transpose(clip_np, (3, 0, 1, 2))  # (C, T, H, W)
+        clip_tensor = (
+            torch.from_numpy(clip_np).unsqueeze(0).to(self._device)
+        )  # (1, C, T, H, W)
+
+        preprocess_time = time.time() - preprocess_start
+
+        # MODEL INFERENCE
+        inference_start_frame = time.time()
+        saliency = self._model(clip_tensor)  # (1, H, W)
+        saliency_np = saliency.cpu().numpy()[0]  # (H, W)
+        inference_time = time.time() - inference_start_frame
+
+        # POST-PROCESSING
+        postprocess_start = time.time()
+
+        # Resize saliency to original frame size
+        saliency_resized = cv2.resize(saliency_np, (width, height))
+
+        # Apply Gaussian blur
+        saliency_resized = cv2.GaussianBlur(
+            saliency_resized,
+            (self.GAUSSIAN_KERNEL_SIZE, self.GAUSSIAN_KERNEL_SIZE),
+            self.GAUSSIAN_SIGMA,
+        )
+
+        # Normalize saliency to [0, 1] range
+        sal_min = saliency_resized.min()
+        sal_max = saliency_resized.max()
+        if sal_max > sal_min:
+            saliency_normalized = (saliency_resized - sal_min) / (sal_max - sal_min)
+        else:
+            saliency_normalized = saliency_resized
+
+        # Extract focal points
+        focal_points = self._extract_focal_points(saliency_normalized)
+
+        postprocess_time = time.time() - postprocess_start
+
+        return focal_points, preprocess_time, inference_time, postprocess_time
 
     def _extract_focal_points(self, heatmap):
         """
