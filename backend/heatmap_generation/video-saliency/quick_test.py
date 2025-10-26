@@ -4,12 +4,9 @@
 import requests
 import os
 
-# Set your API key here or use environment variable
-# API_KEY = os.environ.get("BASETEN_API_KEY", "YOUR_API_KEY_HERE")
-
 response = requests.post(
-    "https://model-03y4xg43.api.baseten.co/development/predict",
-    headers={"Authorization": f"Api-Key bSRhB0R4.5zVXIvEyniLB6Jzwrpxs0NETFvrXeRk8"},
+    os.environ.get("BASETEN_API_URL"),
+    headers={"Authorization": f"Api-Key {os.environ.get('BASETEN_API_KEY')}"},
     json={
         "video_url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4"
     },
