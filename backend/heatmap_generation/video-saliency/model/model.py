@@ -43,6 +43,7 @@ import os
 import tempfile
 import base64
 import requests
+import time
 from pathlib import Path
 
 import torch
@@ -52,7 +53,8 @@ from scipy import ndimage
 
 # Import the video saliency model from packages directory
 # Truss automatically adds packages/ to Python path
-from model.Vinet_S_model import VideoSaliencyModel
+# Using vinet_model to avoid naming collision with /app/model/ directory
+from vinet_model.Vinet_S_model import VideoSaliencyModel
 
 
 class Model:
@@ -138,8 +140,10 @@ class Model:
                 - device: Device override (optional)
 
         Returns:
-            Dictionary with video info and focal points for each frame
+            Dictionary with video info, focal points, and performance metrics
         """
+        start_time = time.time()
+
         # Parse input
         video_url = model_input.get("video_url")
         video_base64 = model_input.get("video_base64")
@@ -156,6 +160,7 @@ class Model:
 
             try:
                 # Download or decode video
+                download_start = time.time()
                 if video_url:
                     print(f"Downloading video from {video_url}")
                     response = requests.get(video_url, timeout=30)
@@ -167,9 +172,20 @@ class Model:
                     tmp_file.write(video_data)
 
                 tmp_file.flush()
+                download_time = time.time() - download_start
+                print(f"⏱️  Video download/decode: {download_time:.2f}s")
 
                 # Process video
-                result = self._process_video(tmp_video_path)
+                result = self._process_video(tmp_video_path, download_time)
+
+                # Add total time
+                total_time = time.time() - start_time
+                result["performance_metrics"]["total_time_seconds"] = round(
+                    total_time, 2
+                )
+
+                print(f"⏱️  Total processing time: {total_time:.2f}s")
+
                 return result
 
             except Exception as e:
@@ -181,10 +197,13 @@ class Model:
                 except:
                     pass
 
-    def _process_video(self, video_path):
+    def _process_video(self, video_path, download_time):
         """
         Internal method to process video and extract focal points.
+        Includes detailed timing metrics for performance benchmarking.
         """
+        process_start = time.time()
+
         # Open video
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
@@ -195,9 +214,16 @@ class Model:
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        print(f"Video: {width}x{height} @ {fps:.1f}fps, {total_frames} frames")
+        input_resolution = f"{width}x{height}"
+        model_resolution = f"{self.MODEL_WIDTH}x{self.MODEL_HEIGHT}"
+
+        print(f"📹 Video: {width}x{height} @ {fps:.1f}fps, {total_frames} frames")
+        print(
+            f"🔄 Will resize from {input_resolution} to {model_resolution} for inference"
+        )
 
         # Read all frames
+        load_start = time.time()
         frames = []
         while True:
             ret, frame = cap.read()
@@ -205,8 +231,9 @@ class Model:
                 break
             frames.append(frame)
         cap.release()
+        load_time = time.time() - load_start
 
-        print(f"Loaded {len(frames)} frames")
+        print(f"⏱️  Frame loading: {load_time:.2f}s ({len(frames)} frames)")
 
         # Prepare output data structure
         focal_points_data = {
@@ -215,13 +242,32 @@ class Model:
                 "height": height,
                 "fps": fps,
                 "total_frames": total_frames,
+                "input_resolution": input_resolution,
+                "model_resolution": model_resolution,
             },
             "focal_points": [],
+            "performance_metrics": {
+                "device": str(self._device),
+                "download_decode_time_seconds": round(download_time, 2),
+                "frame_loading_time_seconds": round(load_time, 2),
+            },
         }
 
-        # Process frames
+        # Process frames with detailed timing
+        inference_start = time.time()
+        preprocessing_times = []
+        model_inference_times = []
+        postprocessing_times = []
+
+        print(f"\n🚀 Starting inference on {len(frames)} frames...")
+
         with torch.no_grad():
             for i in range(len(frames)):
+                frame_start = time.time()
+
+                # PREPROCESSING
+                preprocess_start = time.time()
+
                 # Get clip (32 frames ending at current frame)
                 start_idx = max(0, i - self.CLIP_SIZE + 1)
                 clip = frames[start_idx : i + 1]
@@ -233,7 +279,7 @@ class Model:
                 # Preprocess clip
                 processed_clip = []
                 for frame in clip:
-                    # Resize to model input size
+                    # Resize to model input size (THIS IS THE KEY - resolution doesn't matter!)
                     resized = cv2.resize(frame, (self.MODEL_WIDTH, self.MODEL_HEIGHT))
                     # BGR to RGB
                     rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
@@ -252,9 +298,16 @@ class Model:
                     torch.from_numpy(clip_np).unsqueeze(0).to(self._device)
                 )  # (1, C, T, H, W)
 
-                # Run inference
+                preprocessing_times.append(time.time() - preprocess_start)
+
+                # MODEL INFERENCE
+                inference_start_frame = time.time()
                 saliency = self._model(clip_tensor)  # (1, H, W)
                 saliency_np = saliency.cpu().numpy()[0]  # (H, W)
+                model_inference_times.append(time.time() - inference_start_frame)
+
+                # POST-PROCESSING
+                postprocess_start = time.time()
 
                 # Resize saliency to original frame size
                 saliency_resized = cv2.resize(saliency_np, (width, height))
@@ -286,9 +339,46 @@ class Model:
                     }
                 )
 
+                postprocessing_times.append(time.time() - postprocess_start)
+
                 # Log progress
                 if (i + 1) % 10 == 0 or i == len(frames) - 1:
-                    print(f"Processed {i + 1}/{len(frames)} frames")
+                    elapsed = time.time() - inference_start
+                    fps = (i + 1) / elapsed
+                    print(f"⏱️  Processed {i + 1}/{len(frames)} frames | {fps:.2f} FPS")
+
+        # Calculate timing statistics
+        total_inference_time = time.time() - inference_start
+        avg_preprocess = np.mean(preprocessing_times) * 1000  # ms
+        avg_inference = np.mean(model_inference_times) * 1000  # ms
+        avg_postprocess = np.mean(postprocessing_times) * 1000  # ms
+        processing_fps = len(frames) / total_inference_time
+
+        # Add comprehensive metrics
+        focal_points_data["performance_metrics"].update(
+            {
+                "total_inference_time_seconds": round(total_inference_time, 2),
+                "frames_per_second": round(processing_fps, 2),
+                "avg_preprocessing_ms_per_frame": round(avg_preprocess, 2),
+                "avg_model_inference_ms_per_frame": round(avg_inference, 2),
+                "avg_postprocessing_ms_per_frame": round(avg_postprocess, 2),
+                "avg_total_ms_per_frame": round(
+                    avg_preprocess + avg_inference + avg_postprocess, 2
+                ),
+                "resolution_note": f"Input {input_resolution} resized to {model_resolution} - original resolution does NOT affect inference speed",
+            }
+        )
+
+        print(f"\n📊 Performance Summary:")
+        print(f"   Device: {self._device}")
+        print(f"   Frames: {len(frames)}")
+        print(f"   Processing FPS: {processing_fps:.2f}")
+        print(
+            f"   Avg per frame: {avg_preprocess + avg_inference + avg_postprocess:.2f}ms"
+        )
+        print(f"     - Preprocessing: {avg_preprocess:.2f}ms")
+        print(f"     - Model inference: {avg_inference:.2f}ms")
+        print(f"     - Post-processing: {avg_postprocess:.2f}ms")
 
         return focal_points_data
 

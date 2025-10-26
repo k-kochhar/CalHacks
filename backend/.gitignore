@@ -12,5 +12,9 @@ __pycache__
 *.pyzwz
 *.pyzwz
 
+# test files
 test_output.json
 test_videos/*
+test_endpoint.py
+
+.DS_Store*
