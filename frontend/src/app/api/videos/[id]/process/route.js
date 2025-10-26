@@ -41,49 +41,44 @@ export async function POST(req, { params }) {
       );
     }
 
-    if (!process.env.BASETEN_API_KEY) {
-      return NextResponse.json(
-        { error: 'Saliency API key not configured' },
-        { status: 500 }
-      );
-    }
-
-    // Call saliency model API
-    const saliencyResponse = await fetch(
-      process.env.BASETEN_API_URL,
+    // Call FastAPI backend pipeline
+    const fastApiUrl = process.env.FASTAPI_URL || "http://localhost:8000";
+    const pipelineResponse = await fetch(
+      `${fastApiUrl}/api/process-video`,
       {
         method: "POST",
         headers: {
-          "Authorization": `Api-Key ${process.env.BASETEN_API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          video_url: origUrl
-        }),
-        timeout: 600000 // 10 minutes timeout
+          video_id: id,
+          s3_url: origUrl
+        })
       }
     );
 
-    if (!saliencyResponse.ok) {
+    if (!pipelineResponse.ok) {
+      const errorData = await pipelineResponse.json().catch(() => ({}));
+      
       // Update status to failed
       await videosCollection.updateOne(
         { _id: id },
         { 
           $set: { 
             status: "failed",
-            error: `Saliency API failed: ${saliencyResponse.status}`,
+            error: errorData.detail || `Pipeline failed: ${pipelineResponse.status}`,
             updatedAt: new Date()
           } 
         }
       );
 
       return NextResponse.json(
-        { error: 'Saliency model API failed' },
+        { error: errorData.detail || 'Video processing pipeline failed' },
         { status: 500 }
       );
     }
 
-    const saliencyData = await saliencyResponse.json();
+    const pipelineData = await pipelineResponse.json();
 
     // Update video with results
     await videosCollection.updateOne(
@@ -91,7 +86,9 @@ export async function POST(req, { params }) {
       { 
         $set: { 
           status: "completed",
-          saliencyResults: saliencyData,
+          optUrl: pipelineData.dropped_url,
+          focalPointsSummary: pipelineData.focal_points_summary,
+          performanceMetrics: pipelineData.performance_metrics,
           updatedAt: new Date()
         } 
       }
@@ -101,7 +98,9 @@ export async function POST(req, { params }) {
       success: true, 
       message: 'Video processing completed',
       id: id,
-      results: saliencyData
+      dropped_url: pipelineData.dropped_url,
+      focal_points_summary: pipelineData.focal_points_summary,
+      performance_metrics: pipelineData.performance_metrics
     });
 
   } catch (error) {
@@ -109,6 +108,7 @@ export async function POST(req, { params }) {
     
     // Update status to failed
     try {
+      const { id } = await params;
       const client = await clientPromise;
       const db = client.db("video-rows");
       const videosCollection = db.collection("videos");

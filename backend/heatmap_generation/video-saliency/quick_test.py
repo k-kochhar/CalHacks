@@ -14,7 +14,6 @@ long_video_url = (
 response = requests.post(
     os.environ.get("BASETEN_API_URL"),
     headers={"Authorization": f"Api-Key {os.environ.get('BASETEN_API_KEY')}"},
-    json={
-        "video_url": "aws_video_url"
-    },
+    json={"video_url": aws_video_url},
     timeout=300,
+)
