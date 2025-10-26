@@ -1,7 +1,7 @@
 # config.py
 
 FOVEATED_DEFAULTS = {
-    "stride": 16,
+    "stride": 4,
     # thresholds are expressed as fractions of screen diagonal
     "thresh1": 0.10,
     "thresh2": 0.25,
